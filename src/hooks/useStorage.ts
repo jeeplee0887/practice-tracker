@@ -116,6 +116,49 @@ export function saveSessionDirect(session: PracticeSession) {
   setState({ ...state, sessions: [...state.sessions, session] });
 }
 
+// --- Backup / restore -----------------------------------------------------
+
+export function getAllData(): AppData {
+  return state;
+}
+
+// Replaces the entire store from imported JSON, normalizing missing fields.
+export function replaceAllData(incoming: unknown): void {
+  if (typeof incoming !== 'object' || incoming === null) {
+    throw new Error('Invalid backup file: not an object.');
+  }
+  const obj = incoming as Partial<AppData>;
+  if (!Array.isArray(obj.children) || !Array.isArray(obj.sessions)) {
+    throw new Error('Invalid backup file: missing children or sessions.');
+  }
+  setState({
+    children: obj.children as Child[],
+    sessions: obj.sessions as PracticeSession[],
+    settings: { ...DEFAULT_SETTINGS, ...(obj.settings ?? {}) },
+  });
+}
+
+// Ask the browser to keep our storage from being evicted. Best-effort: some
+// browsers grant silently, some require an installed PWA, some ignore it.
+export async function requestPersistentStorage(): Promise<boolean> {
+  if (!navigator.storage?.persist) return false;
+  try {
+    if (await navigator.storage.persisted()) return true;
+    return await navigator.storage.persist();
+  } catch {
+    return false;
+  }
+}
+
+export async function isStoragePersisted(): Promise<boolean> {
+  if (!navigator.storage?.persisted) return false;
+  try {
+    return await navigator.storage.persisted();
+  } catch {
+    return false;
+  }
+}
+
 export function todayISO(): string {
   return new Date().toISOString().slice(0, 10);
 }

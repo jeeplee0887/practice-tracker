@@ -1,5 +1,10 @@
-import { useState } from 'react';
-import { useAppData } from '../hooks/useStorage';
+import { useEffect, useRef, useState } from 'react';
+import {
+  useAppData,
+  getAllData,
+  replaceAllData,
+  isStoragePersisted,
+} from '../hooks/useStorage';
 import {
   AVAILABLE_INSTRUMENTS,
   CHILD_COLORS,
@@ -125,7 +130,94 @@ export default function SettingsScreen() {
           />
         </label>
       </section>
+
+      <BackupSection />
     </div>
+  );
+}
+
+function BackupSection() {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [persisted, setPersisted] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    void isStoragePersisted().then(setPersisted);
+  }, []);
+
+  function exportBackup() {
+    const blob = new Blob([JSON.stringify(getAllData(), null, 2)], {
+      type: 'application/json',
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `practice-tracker-backup-${new Date()
+      .toISOString()
+      .slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function importBackup(file: File) {
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      if (
+        !confirm(
+          'Importing replaces all current children and sessions on this device. Continue?'
+        )
+      )
+        return;
+      replaceAllData(data);
+      alert('Backup imported successfully.');
+    } catch (err) {
+      alert(
+        `Could not import backup: ${
+          err instanceof Error ? err.message : 'invalid file'
+        }`
+      );
+    }
+  }
+
+  return (
+    <section className="mb-8 rounded-xl border border-slate-200 bg-white p-4">
+      <h2 className="mb-1 text-sm font-semibold text-slate-600">
+        Data &amp; backup
+      </h2>
+      <p className="mb-4 text-xs text-slate-400">
+        {persisted === null
+          ? 'Checking storage…'
+          : persisted
+            ? '✓ Storage is persistent — data is protected from automatic cleanup.'
+            : 'Storage is best-effort. Add the app to your home screen to protect data, and export a backup regularly.'}
+      </p>
+
+      <div className="flex gap-3">
+        <button
+          onClick={exportBackup}
+          className="flex-1 rounded-lg border border-slate-300 py-2 text-sm font-medium text-slate-700"
+        >
+          Export backup
+        </button>
+        <button
+          onClick={() => fileRef.current?.click()}
+          className="flex-1 rounded-lg border border-slate-300 py-2 text-sm font-medium text-slate-700"
+        >
+          Import backup
+        </button>
+      </div>
+      <input
+        ref={fileRef}
+        type="file"
+        accept="application/json,.json"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) void importBackup(file);
+          e.target.value = '';
+        }}
+      />
+    </section>
   );
 }
 
