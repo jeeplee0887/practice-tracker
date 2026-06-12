@@ -68,7 +68,11 @@ export default function ActiveSessionScreen() {
   const playing = session.isPlaying;
 
   return (
-    <div className="flex min-h-screen flex-col px-5 pt-8 pb-6">
+    <div
+      className="flex min-h-dvh flex-col px-5 pt-8"
+      // Keep the End Session button clear of the iPhone home-indicator bar.
+      style={{ paddingBottom: 'calc(2rem + env(safe-area-inset-bottom))' }}
+    >
       <div className="flex items-center justify-between text-sm text-slate-500">
         <span className="font-medium" style={{ color: child?.color }}>
           {child?.name ?? '—'} · {state.instrument}
