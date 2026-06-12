@@ -15,15 +15,42 @@ export const INSTRUMENT_CLASS_MAP: Record<string, string[]> = {
   Other: ['Music'],
 };
 
+// Broad music classes that fire reliably for any clearly-played instrument.
+// We always watch these in addition to the instrument-specific classes,
+// because the specific class (e.g. "Piano") often scores low on its own
+// while "Music"/"Musical instrument" score high during real playing.
+const GENERAL_MUSIC_CLASSES = ['Music', 'Musical instrument'];
+
 export function resolveActiveClasses(instrument: string): string[] {
-  return INSTRUMENT_CLASS_MAP[instrument] ?? ['Music'];
+  const specific = INSTRUMENT_CLASS_MAP[instrument] ?? [];
+  return [...new Set([...specific, ...GENERAL_MUSIC_CLASSES])];
 }
 
 // RMS below this counts as silence in Stage 1, so YAMNet is skipped.
-const SILENCE_RMS = 0.012;
+const SILENCE_RMS = 0.01;
 const TICK_MS = 1000;
-// YAMNet's analysis window; ~0.96s at 16 kHz.
-const WAVEFORM_SAMPLES = 15600;
+// Audio window length fed to YAMNet, in seconds (its window is ~0.96s).
+const WINDOW_SECONDS = 1.0;
+const YAMNET_RATE = 16000;
+
+// Linear resample to YAMNet's required 16 kHz. Many devices (notably iOS
+// Safari) ignore a requested 16 kHz AudioContext and run at 44.1/48 kHz;
+// feeding wrong-rate audio to YAMNet wrecks classification.
+function resampleTo16k(input: Float32Array, fromRate: number): Float32Array {
+  if (fromRate === YAMNET_RATE) return input;
+  const ratio = YAMNET_RATE / fromRate;
+  const outLen = Math.round(input.length * ratio);
+  const out = new Float32Array(outLen);
+  for (let i = 0; i < outLen; i++) {
+    const srcPos = i / ratio;
+    const idx = Math.floor(srcPos);
+    const frac = srcPos - idx;
+    const a = input[idx] ?? 0;
+    const b = input[idx + 1] ?? a;
+    out[i] = a + (b - a) * frac;
+  }
+  return out;
+}
 
 export interface DetectionTick {
   rms: number;
@@ -88,16 +115,25 @@ export class DetectionEngine {
     let topClass = '';
     let topScore = 0;
 
+    const need = Math.round(WINDOW_SECONDS * this.capture.sampleRate);
     // Stage 1: volume gate. Skip the expensive model when it's quiet.
-    if (rms >= SILENCE_RMS && this.capture.hasEnoughAudio(WAVEFORM_SAMPLES)) {
-      // Stage 2: YAMNet classification.
-      const waveform = this.capture.getWaveform(WAVEFORM_SAMPLES);
+    if (rms >= SILENCE_RMS && this.capture.hasEnoughAudio(need)) {
+      // Stage 2: YAMNet classification (resampled to 16 kHz).
+      const raw = this.capture.getWaveform(need);
+      const waveform = resampleTo16k(raw, this.capture.sampleRate);
       const result = await yamnet.classify(waveform);
       topClass = result.topClass;
       topScore = result.topScore;
       const threshold = this.opts.getThreshold();
-      playing = this.activeClasses.some(
-        (name) => (result.scores[name] ?? 0) > threshold
+      const bestWatched = Math.max(
+        0,
+        ...this.activeClasses.map((name) => result.scores[name] ?? 0)
+      );
+      playing = bestWatched > threshold;
+      console.debug(
+        `[detect] top=${topClass} ${topScore.toFixed(2)} ` +
+          `bestWatched=${bestWatched.toFixed(2)} thr=${threshold} ` +
+          `playing=${playing} rate=${this.capture.sampleRate}`
       );
     }
 

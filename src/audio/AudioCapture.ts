@@ -7,8 +7,9 @@
 // stream into the context.
 
 const TARGET_SAMPLE_RATE = 16000;
-// ~1s of audio. YAMNet's analysis window is ~0.96s (15360 samples @ 16k).
-const RING_SECONDS = 1;
+// A bit over 1s of audio so a full 1.0s window is always available at the
+// device's native sample rate (before resampling to 16 kHz).
+const RING_SECONDS = 1.25;
 
 export class AudioCapture {
   private ctx: AudioContext | null = null;

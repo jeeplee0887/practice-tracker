@@ -41,7 +41,7 @@ export const PAUSE_DEBOUNCE_MIN = 15;
 export const PAUSE_DEBOUNCE_MAX = 120;
 
 export const DEFAULT_SETTINGS: AppSettings = {
-  detectionThreshold: 0.5,
+  detectionThreshold: 0.3,
   pauseDebounceSeconds: 60,
   startDebounceSeconds: 3,
   debugMode: false,
