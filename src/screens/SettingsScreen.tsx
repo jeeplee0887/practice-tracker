@@ -12,7 +12,7 @@ import {
   PAUSE_DEBOUNCE_MIN,
   type Child,
 } from '../types';
-import { formatSilenceTolerance } from '../utils';
+import { formatSilenceTolerance, goalForInstrument } from '../utils';
 
 export default function SettingsScreen() {
   const {
@@ -298,20 +298,44 @@ function ChildEditor({
             </div>
           </div>
 
-          <label className="block text-sm font-medium">
-            Daily goal: {child.dailyGoalMinutes} min
-            <input
-              type="range"
-              min={5}
-              max={120}
-              step={5}
-              value={child.dailyGoalMinutes}
-              onChange={(e) =>
-                onChange({ dailyGoalMinutes: Number(e.target.value) })
-              }
-              className="mt-2 w-full accent-indigo-600"
-            />
-          </label>
+          <div>
+            <span className="text-sm font-medium">Daily goals</span>
+            {child.instruments.length === 0 ? (
+              <p className="mt-1 text-xs text-slate-400">
+                Select an instrument above to set its daily goal.
+              </p>
+            ) : (
+              <div className="mt-2 space-y-4">
+                {child.instruments.map((inst) => {
+                  const goal = goalForInstrument(child, inst);
+                  return (
+                    <label key={inst} className="block text-sm">
+                      <span className="flex items-center justify-between">
+                        <span className="font-medium">{inst}</span>
+                        <span className="text-slate-400">{goal} min</span>
+                      </span>
+                      <input
+                        type="range"
+                        min={5}
+                        max={120}
+                        step={5}
+                        value={goal}
+                        onChange={(e) =>
+                          onChange({
+                            instrumentGoals: {
+                              ...child.instrumentGoals,
+                              [inst]: Number(e.target.value),
+                            },
+                          })
+                        }
+                        className="mt-1 w-full accent-indigo-600"
+                      />
+                    </label>
+                  );
+                })}
+              </div>
+            )}
+          </div>
 
           <div>
             <span className="text-sm font-medium">Color</span>

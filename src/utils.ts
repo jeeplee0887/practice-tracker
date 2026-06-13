@@ -1,3 +1,15 @@
+import { DEFAULT_GOAL_MINUTES, type Child } from './types';
+
+// Daily goal (minutes) for a given instrument: the instrument-specific goal if
+// set, otherwise the child's fallback goal, otherwise the app default.
+export function goalForInstrument(child: Child, instrument: string): number {
+  return (
+    child.instrumentGoals?.[instrument] ??
+    child.dailyGoalMinutes ??
+    DEFAULT_GOAL_MINUTES
+  );
+}
+
 // mm:ss for short durations, h:mm:ss when over an hour.
 export function formatDuration(totalSeconds: number): string {
   const s = Math.max(0, Math.floor(totalSeconds));

@@ -2,7 +2,10 @@ export interface Child {
   id: string;
   name: string;
   instruments: string[];
+  // Fallback daily goal (minutes) for any instrument without a specific goal.
   dailyGoalMinutes: number;
+  // Per-instrument daily goal in minutes, keyed by instrument name.
+  instrumentGoals?: Record<string, number>;
   color: string;
 }
 
@@ -36,6 +39,8 @@ export interface AppData {
   sessions: PracticeSession[];
   settings: AppSettings;
 }
+
+export const DEFAULT_GOAL_MINUTES = 30;
 
 export const PAUSE_DEBOUNCE_MIN = 15;
 export const PAUSE_DEBOUNCE_MAX = 120;

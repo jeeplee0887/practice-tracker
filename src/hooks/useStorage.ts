@@ -18,6 +18,7 @@ function seedData(): AppData {
         name: 'Alex',
         instruments: ['Piano'],
         dailyGoalMinutes: 30,
+        instrumentGoals: { Piano: 30 },
         color: CHILD_COLORS[0],
       },
     ],
@@ -170,5 +171,21 @@ export function secondsPracticedToday(
   const today = todayISO();
   return sessions
     .filter((s) => s.childId === childId && s.date === today)
+    .reduce((sum, s) => sum + s.effectiveDuration, 0);
+}
+
+export function secondsPracticedTodayForInstrument(
+  sessions: PracticeSession[],
+  childId: string,
+  instrument: string
+): number {
+  const today = todayISO();
+  return sessions
+    .filter(
+      (s) =>
+        s.childId === childId &&
+        s.date === today &&
+        s.instrument === instrument
+    )
     .reduce((sum, s) => sum + s.effectiveDuration, 0);
 }

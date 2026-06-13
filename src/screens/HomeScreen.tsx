@@ -1,10 +1,9 @@
 import { Link, useNavigate } from 'react-router-dom';
-import ProgressRing from '../components/ProgressRing';
 import {
   useAppData,
-  secondsPracticedToday,
+  secondsPracticedTodayForInstrument,
 } from '../hooks/useStorage';
-import { formatDateLabel, formatDuration } from '../utils';
+import { formatDateLabel, formatDuration, goalForInstrument } from '../utils';
 
 export default function HomeScreen() {
   const { children, sessions } = useAppData();
@@ -40,44 +39,70 @@ export default function HomeScreen() {
         </div>
       ) : (
         <div className="space-y-3">
-          {children.map((child) => {
-            const practiced = secondsPracticedToday(sessions, child.id);
-            const goalSeconds = child.dailyGoalMinutes * 60;
-            const progress = goalSeconds > 0 ? practiced / goalSeconds : 0;
-            return (
-              <div
-                key={child.id}
-                className="flex items-center gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
-              >
-                <ProgressRing
-                  progress={progress}
-                  color={child.color}
-                  label={`${Math.round(practiced / 60)}`}
-                  sublabel={`/ ${child.dailyGoalMinutes} min`}
-                />
-                <div className="min-w-0 flex-1">
-                  <h2 className="truncate text-lg font-semibold">
-                    {child.name}
-                  </h2>
-                  <p className="truncate text-sm text-slate-500">
-                    {child.instruments.join(', ') || 'No instruments set'}
-                  </p>
-                  {progress >= 1 && (
-                    <p className="text-xs font-medium text-emerald-600">
-                      🎉 Daily goal reached!
-                    </p>
-                  )}
-                </div>
+          {children.map((child) => (
+            <div
+              key={child.id}
+              className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="truncate text-lg font-semibold">
+                  {child.name}
+                </h2>
                 <button
                   onClick={() => navigate(`/start/${child.id}`)}
-                  className="rounded-lg bg-indigo-600 px-3 py-2 text-sm font-medium text-white active:bg-indigo-700"
+                  className="shrink-0 rounded-lg px-3 py-2 text-sm font-medium text-white active:opacity-90"
                   style={{ backgroundColor: child.color }}
                 >
                   Start
                 </button>
               </div>
-            );
-          })}
+
+              {child.instruments.length === 0 ? (
+                <p className="mt-2 text-sm text-slate-400">
+                  No instruments set
+                </p>
+              ) : (
+                <div className="mt-3 space-y-2.5">
+                  {child.instruments.map((inst) => {
+                    const practiced = secondsPracticedTodayForInstrument(
+                      sessions,
+                      child.id,
+                      inst
+                    );
+                    const goalMin = goalForInstrument(child, inst);
+                    const goalSeconds = goalMin * 60;
+                    const progress =
+                      goalSeconds > 0
+                        ? Math.min(practiced / goalSeconds, 1)
+                        : 0;
+                    const done = progress >= 1;
+                    return (
+                      <div key={inst}>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="font-medium text-slate-700">
+                            {inst}
+                          </span>
+                          <span className="text-slate-500">
+                            {done && '🎉 '}
+                            {Math.round(practiced / 60)} / {goalMin} min
+                          </span>
+                        </div>
+                        <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-slate-100">
+                          <div
+                            className="h-full rounded-full transition-all"
+                            style={{
+                              width: `${progress * 100}%`,
+                              backgroundColor: child.color,
+                            }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       )}
 
