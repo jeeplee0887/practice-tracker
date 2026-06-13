@@ -144,6 +144,10 @@ export default function ActiveSessionScreen() {
                 : ''}
             </div>
             <div>classified playing: {String(session.debug.playing)}</div>
+            <div>
+              rms: {session.debug.rms.toFixed(4)}
+              {session.debug.rms < 0.003 ? ' (below gate)' : ''}
+            </div>
           </div>
         )}
       </div>

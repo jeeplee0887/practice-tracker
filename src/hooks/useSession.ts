@@ -28,7 +28,7 @@ export interface SessionView {
   effectiveSeconds: number;
   wallSeconds: number;
   level: number; // RMS 0..1
-  debug: { topClass: string; topScore: number; playing: boolean };
+  debug: { topClass: string; topScore: number; playing: boolean; rms: number };
   start: () => Promise<void>;
   end: () => PracticeSession;
 }
@@ -48,6 +48,7 @@ export function useSession({
     topClass: '',
     topScore: 0,
     playing: false,
+    rms: 0,
   });
 
   const captureRef = useRef<AudioCapture | null>(null);
@@ -121,6 +122,7 @@ export function useSession({
             topClass: t.topClass,
             topScore: t.topScore,
             playing: t.playing,
+            rms: t.rms,
           }),
       });
       engine.start();

@@ -26,8 +26,12 @@ export function resolveActiveClasses(instrument: string): string[] {
   return [...new Set([...specific, ...GENERAL_MUSIC_CLASSES])];
 }
 
-// RMS below this counts as silence in Stage 1, so YAMNet is skipped.
-const SILENCE_RMS = 0.01;
+// RMS below this counts as silence in Stage 1, so YAMNet is skipped. Kept low:
+// bowed/sustained instruments (cello, viola) are much quieter at the mic than
+// a piano's percussive attacks, and were being gated out as "silence" before
+// YAMNet could classify them. YAMNet is the real arbiter; this gate only skips
+// genuine quiet to save battery.
+const SILENCE_RMS = 0.003;
 const TICK_MS = 1000;
 // Audio window length fed to YAMNet, in seconds (its window is ~0.96s).
 const WINDOW_SECONDS = 1.0;
