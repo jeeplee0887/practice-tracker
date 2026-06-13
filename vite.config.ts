@@ -1,10 +1,34 @@
+import { execSync } from 'node:child_process';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
+// Build a human-readable version from git: an always-incrementing build number
+// (total commit count) plus the short SHA so a build maps to an exact commit.
+// Falls back gracefully when git history isn't available (e.g. shallow clone).
+function appVersion(): string {
+  const git = (cmd: string, fallback: string) => {
+    try {
+      return execSync(cmd, { stdio: ['ignore', 'pipe', 'ignore'] })
+        .toString()
+        .trim();
+    } catch {
+      return fallback;
+    }
+  };
+  const build = git('git rev-list --count HEAD', '0');
+  const sha =
+    process.env.GITHUB_SHA?.slice(0, 7) ??
+    git('git rev-parse --short HEAD', 'dev');
+  return `v1.${build} (${sha})`;
+}
+
 // Base path matches the GitHub Pages project URL: /practice-tracker/
 export default defineConfig({
   base: '/practice-tracker/',
+  define: {
+    __APP_VERSION__: JSON.stringify(appVersion()),
+  },
   plugins: [
     react(),
     VitePWA({

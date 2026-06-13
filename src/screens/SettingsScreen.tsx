@@ -132,6 +132,10 @@ export default function SettingsScreen() {
       </section>
 
       <BackupSection />
+
+      <p className="pb-8 text-center text-xs text-slate-400">
+        Practice Tracker · {__APP_VERSION__}
+      </p>
     </div>
   );
 }
