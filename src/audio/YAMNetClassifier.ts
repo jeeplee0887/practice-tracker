@@ -8,11 +8,14 @@ import * as tf from '@tensorflow/tfjs';
 // We average the per-frame scores and map them to class names via the official
 // class-map CSV (index,mid,display_name).
 //
-// Both URLs are intentionally constants so they're easy to repoint (e.g. to a
-// self-hosted copy) if the upstream location moves.
-const MODEL_URL = 'https://tfhub.dev/google/tfjs-model/yamnet/tfjs/1';
-const CLASS_MAP_URL =
-  'https://raw.githubusercontent.com/tensorflow/models/master/research/audioset/yamnet/yamnet_class_map.csv';
+// Self-hosted copies of the YAMNet model + class map (vendored under
+// public/models/yamnet). Serving them ourselves removes a runtime dependency
+// on tfhub.dev / raw.githubusercontent.com — both of which could move or rate
+// limit — and lets the service worker precache them for full offline use.
+// BASE_URL keeps the paths correct whether the app is served from
+// /practice-tracker/ or a custom-domain root.
+const MODEL_URL = `${import.meta.env.BASE_URL}models/yamnet/model.json`;
+const CLASS_MAP_URL = `${import.meta.env.BASE_URL}models/yamnet/yamnet_class_map.csv`;
 
 export interface ClassificationResult {
   topClass: string;
@@ -39,7 +42,7 @@ class YAMNetClassifier {
   private async doLoad(): Promise<void> {
     await tf.ready();
     const [model, classNames] = await Promise.all([
-      tf.loadGraphModel(MODEL_URL, { fromTFHub: true }),
+      tf.loadGraphModel(MODEL_URL),
       this.loadClassMap(),
     ]);
     this.model = model;

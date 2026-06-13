@@ -54,25 +54,11 @@ export default defineConfig({
         ],
       },
       workbox: {
-        // App shell precache. Raise the size limit so large JS chunks (tfjs) are precached.
+        // Precache the app shell AND the self-hosted YAMNet model (json + weight
+        // shards) and class map, so the app works fully offline after first load.
+        // Shards are ~4 MB each, so keep the per-file limit above that.
         maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
-        globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
-        runtimeCaching: [
-          {
-            // Cache the YAMNet model files + class map (cross-origin) for offline use.
-            urlPattern: ({ url }) =>
-              url.href.includes('tfhub.dev') ||
-              url.href.includes('kaggle') ||
-              url.href.includes('storage.googleapis.com/tfjs-models') ||
-              url.href.includes('yamnet_class_map.csv'),
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'yamnet-model',
-              expiration: { maxEntries: 60, maxAgeSeconds: 60 * 60 * 24 * 90 },
-              cacheableResponse: { statuses: [0, 200] },
-            },
-          },
-        ],
+        globPatterns: ['**/*.{js,css,html,svg,png,woff2,json,bin,csv}'],
       },
     }),
   ],
