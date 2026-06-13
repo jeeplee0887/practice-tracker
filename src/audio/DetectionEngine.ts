@@ -22,7 +22,7 @@ const GENERAL_MUSIC_CLASSES = ['Music', 'Musical instrument'];
 // instrument-specific ones (reliable, but instrument-agnostic). When false,
 // only the instrument-specific classes count, so the selected instrument
 // genuinely drives detection — at the cost of lower, flickier scores.
-const INCLUDE_GENERAL_MUSIC = false;
+const INCLUDE_GENERAL_MUSIC = true;
 
 export function resolveActiveClasses(instrument: string): string[] {
   const specific = INSTRUMENT_CLASS_MAP[instrument] ?? [];
