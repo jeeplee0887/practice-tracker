@@ -78,7 +78,10 @@ export class DetectionEngine {
   private timer: ReturnType<typeof setTimeout> | null = null;
   private running = false;
 
-  private consecutivePlaying = 0;
+  // Recent per-window playing results, used as a sliding window for the start
+  // decision so brief flicker (common with sustained instruments like cello)
+  // doesn't keep resetting the counter the way a strict "N in a row" rule does.
+  private recent: boolean[] = [];
   private silentSeconds = 0;
   private active = false;
 
@@ -153,19 +156,25 @@ export class DetectionEngine {
     const startWindows = Math.max(1, this.opts.getStartDebounceSeconds());
     const pauseSeconds = this.opts.getPauseDebounceSeconds();
 
-    if (playing) {
-      this.consecutivePlaying += 1;
-      this.silentSeconds = 0;
-      if (!this.active && this.consecutivePlaying >= startWindows) {
+    // Slide a window one wider than the required count, so a single dip below
+    // threshold (a bow change, a quiet note) won't reset progress to zero.
+    const span = startWindows + 1;
+    this.recent.push(playing);
+    if (this.recent.length > span) this.recent.shift();
+
+    if (!this.active) {
+      const playingInSpan = this.recent.reduce((n, p) => n + (p ? 1 : 0), 0);
+      if (playingInSpan >= startWindows) {
         this.setActive(true);
+        this.silentSeconds = 0;
       }
+    } else if (playing) {
+      this.silentSeconds = 0;
     } else {
-      this.consecutivePlaying = 0;
-      if (this.active) {
-        this.silentSeconds += TICK_MS / 1000;
-        if (this.silentSeconds >= pauseSeconds) {
-          this.setActive(false);
-        }
+      this.silentSeconds += TICK_MS / 1000;
+      if (this.silentSeconds >= pauseSeconds) {
+        this.setActive(false);
+        this.recent = []; // require fresh evidence before restarting
       }
     }
   }
