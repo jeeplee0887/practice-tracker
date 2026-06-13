@@ -143,6 +143,10 @@ export default function ActiveSessionScreen() {
                 ? `(${session.debug.topScore.toFixed(2)})`
                 : ''}
             </div>
+            <div>
+              watched: {session.debug.bestWatched.toFixed(2)} vs thr{' '}
+              {settings.detectionThreshold.toFixed(2)}
+            </div>
             <div>classified playing: {String(session.debug.playing)}</div>
             <div>
               rms: {session.debug.rms.toFixed(4)}

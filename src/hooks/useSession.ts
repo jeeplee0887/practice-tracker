@@ -28,7 +28,13 @@ export interface SessionView {
   effectiveSeconds: number;
   wallSeconds: number;
   level: number; // RMS 0..1
-  debug: { topClass: string; topScore: number; playing: boolean; rms: number };
+  debug: {
+    topClass: string;
+    topScore: number;
+    bestWatched: number;
+    playing: boolean;
+    rms: number;
+  };
   start: () => Promise<void>;
   end: () => PracticeSession;
 }
@@ -47,6 +53,7 @@ export function useSession({
   const [debug, setDebug] = useState({
     topClass: '',
     topScore: 0,
+    bestWatched: 0,
     playing: false,
     rms: 0,
   });
@@ -121,6 +128,7 @@ export function useSession({
           setDebug({
             topClass: t.topClass,
             topScore: t.topScore,
+            bestWatched: t.bestWatched,
             playing: t.playing,
             rms: t.rms,
           }),

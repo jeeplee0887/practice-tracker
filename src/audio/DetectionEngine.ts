@@ -16,14 +16,20 @@ export const INSTRUMENT_CLASS_MAP: Record<string, string[]> = {
 };
 
 // Broad music classes that fire reliably for any clearly-played instrument.
-// We always watch these in addition to the instrument-specific classes,
-// because the specific class (e.g. "Piano") often scores low on its own
-// while "Music"/"Musical instrument" score high during real playing.
 const GENERAL_MUSIC_CLASSES = ['Music', 'Musical instrument'];
+
+// Experiment toggle. When true, broad Music classes are watched alongside the
+// instrument-specific ones (reliable, but instrument-agnostic). When false,
+// only the instrument-specific classes count, so the selected instrument
+// genuinely drives detection — at the cost of lower, flickier scores.
+const INCLUDE_GENERAL_MUSIC = false;
 
 export function resolveActiveClasses(instrument: string): string[] {
   const specific = INSTRUMENT_CLASS_MAP[instrument] ?? [];
-  return [...new Set([...specific, ...GENERAL_MUSIC_CLASSES])];
+  const classes = INCLUDE_GENERAL_MUSIC
+    ? [...specific, ...GENERAL_MUSIC_CLASSES]
+    : specific;
+  return [...new Set(classes)];
 }
 
 // RMS below this counts as silence in Stage 1, so YAMNet is skipped. Kept low:
@@ -62,6 +68,7 @@ export interface DetectionTick {
   active: boolean; // timer should be running (after debounce)
   topClass: string;
   topScore: number;
+  bestWatched: number; // best score among the watched instrument classes
   silentSeconds: number;
 }
 
@@ -121,6 +128,7 @@ export class DetectionEngine {
     let playing = false;
     let topClass = '';
     let topScore = 0;
+    let bestWatched = 0;
 
     const need = Math.round(WINDOW_SECONDS * this.capture.sampleRate);
     // Stage 1: volume gate. Skip the expensive model when it's quiet.
@@ -132,7 +140,7 @@ export class DetectionEngine {
       topClass = result.topClass;
       topScore = result.topScore;
       const threshold = this.opts.getThreshold();
-      const bestWatched = Math.max(
+      bestWatched = Math.max(
         0,
         ...this.activeClasses.map((name) => result.scores[name] ?? 0)
       );
@@ -152,6 +160,7 @@ export class DetectionEngine {
       active: this.active,
       topClass,
       topScore,
+      bestWatched,
       silentSeconds: this.silentSeconds,
     });
   }
